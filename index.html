@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="nb">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bryllupssjekk</title>
+<!-- ================================================================
+     LYKKEBANKEN – bryllupssjekk med portvakt
+     Hele sjekken er skjult til sikkerhetsspørsmålet er riktig besvart.
+
+     OPPSETT:
+     1) Fyll inn CONFIG under (behold anførselstegn og komma).
+     2) Publiser til GitHub Pages.
+     3) Åpne siden med ?lag-hash=svaret bakerst i adressen for å få
+        hashen. Lim den inn i svarHash og publiser på nytt. Eksempel:
+        https://allsaid.github.io/Lykkebanken/?lag-hash=paris
+     Tom svarHash = ingen portvakt (praktisk under testing).
+     ================================================================ -->
+<script>
+const CONFIG = {
+  mottaker: "Ingrid og Erik",
+  belop: "4 000",
+  valuta: "kr",
+  avsender: "June, Said, Linda, Lasse & Vidar",
+  dato: "12.09.2026",
+  melding: "Gratulerer med den store dagen!",
+  ntfyTopic: "lykkebanken-ingrid-erik-p4m9wz",
+  fallbackTlf: "+47XXXXXXXX",      // ditt nummer (SMS-reserve). Tom streng "" for å skjule.
+  sporsmal: "",                     // f.eks. "Hvor møttes dere første gang? (ett ord)"
+  svarHash: ""                      // limes inn fra ?lag-hash
+};
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500;1,600&family=Courier+Prime&family=Sacramento&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --papir: #16130e;
+    --papir-kant: #3a2f1c;
+    --gull: #c9a24b;
+    --gull-lys: #e3c766;
+    --gull-dus: #9c7f3d;
+    --tekst: #e8dcc0;
+    --stempel: #b03a36;
+    --bakgrunn: #0a0906;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    min-height: 100vh;
+    background: var(--bakgrunn);
+    background-image:
+      radial-gradient(ellipse at 20% 10%, rgba(201,162,75,0.10), transparent 55%),
+      radial-gradient(ellipse at 80% 90%, rgba(201,162,75,0.07), transparent 55%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px 48px;
+    font-family: 'Cormorant Garamond', serif;
+    color: var(--tekst);
+  }
+
+  .intro { text-align: center; margin-bottom: 28px; letter-spacing: 0.5px; }
+  .intro .eyebrow {
+    font-family: 'Courier Prime', monospace;
+    font-size: 12px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--gull);
+    display: block;
+    margin-bottom: 10px;
+  }
+  .intro h1 {
+    font-size: clamp(28px, 6vw, 42px);
+    font-weight: 600;
+    font-style: italic;
+  }
+
+  /* ------------------ Portvakt ------------------ */
+  .portvakt {
+    background: var(--papir);
+    border: 1px solid var(--papir-kant);
+    border-radius: 10px;
+    padding: 34px 30px;
+    max-width: 460px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 30px 60px rgba(0,0,0,0.6);
+    animation: land 0.9s cubic-bezier(.2,.8,.25,1) both;
+  }
+  .portvakt .eyebrow {
+    font-family: 'Courier Prime', monospace;
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--gull);
+    display: block;
+    margin-bottom: 8px;
+  }
+  .portvakt h2 {
+    font-family: 'Cinzel', serif;
+    font-size: 21px;
+    font-weight: 600;
+    color: var(--gull-lys);
+    margin-bottom: 8px;
+    letter-spacing: 1px;
+  }
+  .portvakt .forklaring {
+    font-size: 17px;
+    font-style: italic;
+    color: var(--gull-dus);
+    margin-bottom: 20px;
+  }
+  .portvakt p.sporsmal-tekst {
+    font-size: 21px;
+    font-weight: 600;
+    margin-bottom: 16px;
+  }
+  .portvakt input {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 18px;
+    padding: 11px 16px;
+    border: 1.5px solid var(--gull-dus);
+    border-radius: 999px;
+    width: 100%;
+    max-width: 300px;
+    text-align: center;
+    background: #0f0d09;
+    color: var(--tekst);
+    margin-bottom: 14px;
+  }
+  .portvakt input:focus-visible { outline: 3px solid var(--gull); }
+  .portvakt .feil {
+    color: var(--stempel);
+    font-size: 17px;
+    min-height: 24px;
+    margin-top: 10px;
+  }
+
+  /* ------------------ Sjekken ------------------ */
+  .sjekk-wrap { perspective: 1200px; width: 100%; max-width: 640px; }
+
+  .sjekk {
+    position: relative;
+    background: var(--papir);
+    border: 1px solid var(--papir-kant);
+    border-radius: 10px;
+    padding: 30px 32px 22px;
+    box-shadow: 0 30px 60px rgba(0,0,0,0.6);
+    overflow: hidden;
+    animation: land 0.9s cubic-bezier(.2,.8,.25,1) both;
+  }
+  @keyframes land {
+    from { opacity: 0; transform: rotateX(18deg) translateY(40px); }
+    to   { opacity: 1; transform: rotateX(0) translateY(0); }
+  }
+
+  /* Gull-dobbeltramme, som på det printede kortet */
+  .sjekk::before {
+    content: "";
+    position: absolute;
+    inset: 8px;
+    border: 1.5px solid var(--gull);
+    border-radius: 6px;
+    pointer-events: none;
+  }
+  .sjekk::after {
+    content: "";
+    position: absolute;
+    inset: 12px;
+    border: 1px solid rgba(201,162,75,0.35);
+    border-radius: 4px;
+    pointer-events: none;
+  }
+
+  .sjekk-innhold { position: relative; z-index: 1; padding: 10px 8px; }
+
+  .sjekk-topp {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-bottom: 1px solid var(--gull);
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+  }
+  .bank-navn {
+    font-family: 'Cinzel', serif;
+    font-weight: 700;
+    font-size: 22px;
+    color: var(--gull-lys);
+    letter-spacing: 2px;
+  }
+  .bank-navn small {
+    display: block;
+    font-family: 'Courier Prime', monospace;
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: var(--gull-dus);
+    text-transform: uppercase;
+    margin-top: 4px;
+    font-weight: 400;
+  }
+  .sjekk-nr {
+    font-family: 'Cinzel', serif;
+    font-size: 13px;
+    color: var(--gull);
+    text-align: right;
+    letter-spacing: 1px;
+  }
+  .sjekk-nr .dato {
+    font-family: 'Courier Prime', monospace;
+    font-size: 12px;
+    color: var(--gull-dus);
+    display: block;
+    margin-top: 4px;
+    letter-spacing: 1px;
+  }
+
+  .linje { display: flex; align-items: baseline; gap: 12px; margin-bottom: 18px; }
+  .linje .etikett {
+    font-family: 'Courier Prime', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--gull-dus);
+    white-space: nowrap;
+  }
+  .linje .verdi {
+    flex: 1;
+    border-bottom: 1px solid rgba(201,162,75,0.4);
+    font-size: 23px;
+    font-weight: 600;
+    padding: 0 4px 3px;
+  }
+
+  .belop-rad { display: flex; gap: 14px; align-items: center; margin-bottom: 18px; }
+  .belop-rad .linje { flex: 1; margin-bottom: 0; }
+  .belop-boks {
+    border: 1.5px solid var(--gull);
+    border-radius: 5px;
+    padding: 7px 18px;
+    font-size: 25px;
+    font-weight: 700;
+    color: var(--gull-lys);
+    white-space: nowrap;
+  }
+
+  .bunn-rad {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 22px;
+    margin-top: 24px;
+  }
+  .memo { flex: 1; }
+  .signatur { flex: 1; text-align: center; }
+  .signatur .navn {
+    font-family: 'Sacramento', cursive;
+    font-size: 28px;
+    color: var(--gull-lys);
+    transform: rotate(-3deg);
+    display: inline-block;
+    margin-bottom: -4px;
+    line-height: 1.3;
+  }
+  .signatur .strek {
+    border-top: 1px solid rgba(201,162,75,0.4);
+    font-family: 'Courier Prime', monospace;
+    font-size: 9px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--gull-dus);
+    padding-top: 5px;
+  }
+
+  .micr {
+    font-family: 'Courier Prime', monospace;
+    font-size: 13px;
+    letter-spacing: 3px;
+    color: var(--gull-dus);
+    margin-top: 20px;
+    text-align: center;
+    user-select: none;
+  }
+
+  /* ------------------ Stempel ------------------ */
+  .stempel {
+    position: absolute;
+    top: 50%; left: 50%;
+    font-family: 'Courier Prime', monospace;
+    font-size: clamp(34px, 8vw, 52px);
+    font-weight: 700;
+    letter-spacing: 6px;
+    color: var(--stempel);
+    border: 5px solid var(--stempel);
+    border-radius: 8px;
+    padding: 6px 22px;
+    text-transform: uppercase;
+    opacity: 0;
+    pointer-events: none;
+    transform: translate(-50%, -50%) rotate(-12deg) scale(2.6);
+    z-index: 5;
+  }
+  .stempel.vis { animation: slamm 0.45s cubic-bezier(.15,1.4,.4,1) forwards; }
+  @keyframes slamm {
+    0%   { opacity: 0; transform: translate(-50%,-50%) rotate(-12deg) scale(2.6); }
+    60%  { opacity: 1; transform: translate(-50%,-50%) rotate(-12deg) scale(0.92); }
+    100% { opacity: 0.92; transform: translate(-50%,-50%) rotate(-12deg) scale(1); }
+  }
+
+  /* ------------------ Knapp og status ------------------ */
+  .handling { margin-top: 30px; text-align: center; width: 100%; max-width: 640px; }
+
+  button.innlos {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: #14110b;
+    background: linear-gradient(180deg, var(--gull-lys), var(--gull));
+    border: none;
+    border-radius: 999px;
+    padding: 16px 46px;
+    cursor: pointer;
+    box-shadow: 0 10px 24px rgba(0,0,0,0.5), 0 1px 0 rgba(255,255,255,0.35) inset;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  button.innlos:hover { transform: translateY(-2px); box-shadow: 0 14px 28px rgba(0,0,0,0.55), 0 1px 0 rgba(255,255,255,0.35) inset; }
+  button.innlos:active { transform: translateY(1px) scale(0.98); }
+  button.innlos:focus-visible { outline: 3px solid var(--gull-lys); outline-offset: 3px; }
+  button.innlos:disabled { opacity: 0.55; cursor: default; transform: none; }
+
+  .status { margin-top: 18px; font-size: 20px; min-height: 30px; }
+  .status a { color: var(--gull-lys); }
+
+  canvas#konfetti { position: fixed; inset: 0; pointer-events: none; z-index: 50; }
+
+  [hidden] { display: none !important; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .sjekk, .portvakt { animation: none; }
+    .stempel.vis { animation: none; opacity: 0.92; transform: translate(-50%,-50%) rotate(-12deg) scale(1); }
+  }
+
+  @media (max-width: 480px) {
+    .sjekk { padding: 22px 18px 18px; }
+    .sjekk-innhold { padding: 8px 4px; }
+    .bank-navn { font-size: 18px; letter-spacing: 1px; }
+    .linje .verdi { font-size: 19px; }
+    .belop-rad { flex-direction: column; align-items: stretch; gap: 12px; }
+    .belop-boks { align-self: flex-start; }
+    .bunn-rad { flex-direction: column; align-items: stretch; gap: 18px; }
+    .micr { font-size: 11px; letter-spacing: 2px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="intro">
+  <span class="eyebrow">Fra Lykkebanken</span>
+  <h1 id="introTittel">Hvem der?</h1>
+</div>
+
+<!-- ------------------ PORTVAKT ------------------ -->
+<div class="portvakt" id="portvakt">
+  <span class="eyebrow">Sikkerhetskontroll</span>
+  <h2>Denne sjekken er personlig</h2>
+  <p class="forklaring">Bare brudeparet kan låse den opp. Bevis hvem dere er:</p>
+  <p class="sporsmal-tekst" id="sporsmalTekst"></p>
+  <input type="text" id="svarFelt" placeholder="Svar her" autocomplete="off" autocapitalize="off">
+  <div><button class="innlos" id="svarKnapp">Lås opp</button></div>
+  <p class="feil" id="feilTekst"></p>
+</div>
+
+<!-- ------------------ SJEKKEN ------------------ -->
+<div class="sjekk-wrap" id="sjekkWrap" hidden>
+  <div class="sjekk">
+    <div class="sjekk-innhold">
+      <div class="sjekk-topp">
+        <div class="bank-navn">
+          LYKKEBANKEN
+          <small>Privatbank &middot; etablert i dag</small>
+        </div>
+        <div class="sjekk-nr">
+          Sjekk nr. 001
+          <span class="dato" id="dato"></span>
+        </div>
+      </div>
+
+      <div class="linje">
+        <span class="etikett">Betal til</span>
+        <span class="verdi" id="mottaker"></span>
+      </div>
+
+      <div class="belop-rad">
+        <div class="linje">
+          <span class="etikett">Beløp</span>
+          <span class="verdi" id="belopTekst"></span>
+        </div>
+        <div class="belop-boks" id="belopBoks"></div>
+      </div>
+
+      <div class="bunn-rad">
+        <div class="memo linje" style="margin-bottom:0">
+          <span class="etikett">Memo</span>
+          <span class="verdi" id="melding" style="font-style: italic; font-size: 18px;"></span>
+        </div>
+        <div class="signatur">
+          <span class="navn" id="avsender"></span>
+          <div class="strek">Underskrift</div>
+        </div>
+      </div>
+
+      <div class="micr">120926 &middot; 000001 &middot; GRATULERER</div>
+    </div>
+
+    <div class="stempel" id="stempel">Innløst</div>
+  </div>
+</div>
+
+<div class="handling" id="handling" hidden>
+  <button class="innlos" id="knapp">Innløs sjekken</button>
+  <div class="status" id="status"></div>
+</div>
+
+<canvas id="konfetti"></canvas>
+
+<script>
+// ---------- Fyll inn sjekken ----------
+document.getElementById('mottaker').textContent = CONFIG.mottaker;
+document.getElementById('belopTekst').textContent = CONFIG.belop + " " + CONFIG.valuta;
+document.getElementById('belopBoks').textContent = CONFIG.belop + " " + CONFIG.valuta;
+document.getElementById('melding').textContent = CONFIG.melding;
+document.getElementById('avsender').textContent = CONFIG.avsender;
+document.getElementById('dato').textContent = CONFIG.dato;
+document.getElementById('sporsmalTekst').textContent = CONFIG.sporsmal;
+
+// ---------- Hash ----------
+async function sha256(tekst) {
+  const data = new TextEncoder().encode(tekst.trim().toLowerCase());
+  const buf = await crypto.subtle.digest("SHA-256", data);
+  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, "0")).join("");
+}
+
+const lagHash = new URLSearchParams(location.search).get("lag-hash");
+if (lagHash) sha256(lagHash).then(h => prompt("Lim denne inn som svarHash i CONFIG:", h));
+
+// ---------- Portvakt ----------
+const portvakt = document.getElementById('portvakt');
+const sjekkWrap = document.getElementById('sjekkWrap');
+const handling = document.getElementById('handling');
+const svarFelt = document.getElementById('svarFelt');
+const feilTekst = document.getElementById('feilTekst');
+const introTittel = document.getElementById('introTittel');
+
+function visSjekken() {
+  portvakt.hidden = true;
+  introTittel.textContent = "En sjekk til å innløse";
+  sjekkWrap.hidden = false;
+  handling.hidden = false;
+}
+
+if (!CONFIG.svarHash) visSjekken();   // ingen hash satt = ingen portvakt
+
+async function provSvar() {
+  if (await sha256(svarFelt.value) !== CONFIG.svarHash) {
+    feilTekst.textContent = "Ikke helt – banken slipper deg ikke inn 🤨";
+    svarFelt.select();
+    return;
+  }
+  visSjekken();
+}
+
+document.getElementById('svarKnapp').addEventListener('click', provSvar);
+svarFelt.addEventListener('keydown', e => { if (e.key === "Enter") provSvar(); });
+
+// ---------- Innløsning ----------
+const knapp = document.getElementById('knapp');
+const status = document.getElementById('status');
+const stempel = document.getElementById('stempel');
+
+knapp.addEventListener('click', async () => {
+  knapp.disabled = true;
+  status.textContent = "Sender bud til banken…";
+
+  let ok = false;
+  try {
+    const res = await fetch("https://ntfy.sh/" + CONFIG.ntfyTopic, {
+      method: "POST",
+      body: CONFIG.mottaker + " har innløst bryllupssjekken på " + CONFIG.belop + " " + CONFIG.valuta + "! Åpne Vipps og send pengene. 🎉",
+      headers: {
+        "Title": "Sjekken er innløst!",
+        "Priority": "high",
+        "Tags": "tada,moneybag"
+      }
+    });
+    ok = res.ok;
+  } catch (e) {
+    ok = false;
+  }
+
+  stempel.classList.add('vis');
+
+  if (ok) {
+    status.innerHTML = "Sjekken er innløst! Pengene er på vei via Vipps 🎉";
+  } else if (CONFIG.fallbackTlf) {
+    const smsBody = encodeURIComponent("Vi innløser herved bryllupssjekken på " + CONFIG.belop + " " + CONFIG.valuta + "! 💍");
+    status.innerHTML = 'Banken sover visst – <a href="sms:' + CONFIG.fallbackTlf + '?body=' + smsBody + '">send bud på SMS i stedet</a> 📨';
+  } else {
+    status.innerHTML = "Banken sover visst – si ifra til giverne, så ordner det seg 📨";
+  }
+  skytKonfetti();
+});
+
+// ---------- Konfetti ----------
+function skytKonfetti() {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+  const canvas = document.getElementById('konfetti');
+  const ctx = canvas.getContext('2d');
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+
+  const farger = ['#c9a24b', '#e3c766', '#f2e6c9', '#9c7f3d', '#b03a36'];
+  const biter = [];
+  for (let i = 0; i < 160; i++) {
+    biter.push({
+      x: canvas.width / 2 + (Math.random() - 0.5) * 120,
+      y: canvas.height * 0.55,
+      vx: (Math.random() - 0.5) * 14,
+      vy: -(Math.random() * 14 + 6),
+      w: Math.random() * 8 + 4,
+      h: Math.random() * 5 + 3,
+      farge: farger[Math.floor(Math.random() * farger.length)],
+      rot: Math.random() * Math.PI,
+      vrot: (Math.random() - 0.5) * 0.3,
+      liv: 1
+    });
+  }
+
+  function tegn() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    let aktive = 0;
+    for (const b of biter) {
+      b.vy += 0.35;
+      b.x += b.vx;
+      b.y += b.vy;
+      b.rot += b.vrot;
+      b.liv -= 0.004;
+      if (b.liv <= 0 || b.y > canvas.height + 20) continue;
+      aktive++;
+      ctx.save();
+      ctx.globalAlpha = Math.max(b.liv, 0);
+      ctx.translate(b.x, b.y);
+      ctx.rotate(b.rot);
+      ctx.fillStyle = b.farge;
+      ctx.fillRect(-b.w / 2, -b.h / 2, b.w, b.h);
+      ctx.restore();
+    }
+    if (aktive > 0) requestAnimationFrame(tegn);
+    else ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
+  requestAnimationFrame(tegn);
+}
+</script>
+</body>
+</html>
