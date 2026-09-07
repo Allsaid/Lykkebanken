@@ -380,8 +380,8 @@ const CONFIG = {
     <div class="sjekk-innhold">
       <div class="sjekk-topp">
         <div class="bank-navn">
-          LYKKEBANKEN
-          <small>Privatbank &middot; etablert i dag</small>
+          BRYLLUPSSJEKKEN
+          <small>Lykkebanken &middot; etablert i dag</small>
         </div>
         <div class="sjekk-nr">
           Sjekk nr. 001
@@ -397,7 +397,7 @@ const CONFIG = {
       <div class="belop-rad">
         <div class="linje">
           <span class="etikett">Beløp</span>
-          <span class="verdi" id="belopTekst"></span>
+          <span class="verdi"></span>
         </div>
         <div class="belop-boks" id="belopBoks"></div>
       </div>
@@ -430,7 +430,6 @@ const CONFIG = {
 <script>
 // ---------- Fyll inn sjekken ----------
 document.getElementById('mottaker').textContent = CONFIG.mottaker;
-document.getElementById('belopTekst').textContent = CONFIG.belop + " " + CONFIG.valuta;
 document.getElementById('belopBoks').textContent = CONFIG.belop + " " + CONFIG.valuta;
 document.getElementById('melding').textContent = CONFIG.melding;
 document.getElementById('avsender').textContent = CONFIG.avsender;
